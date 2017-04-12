@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--processing static resources-->
+    <mvc:resources mapping="/resources/**" location="/resources/">
+    </mvc:resources>
+    <!--auto scan and register beans-->
+    <context:component-scan base-package="com.tongkn"/>
+    <!--配置这个东西才能使controller对请求进行处理-->
+    <mvc:annotation-driven></mvc:annotation-driven>
+
+    <!--load jdbc properties-->
+    <context:property-placeholder  location="classpath:conf/jdbc.properties"/>
+
+
+    <!--view resolver-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <!--启用jstl标签-->
+        <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"></property>
+        <property name="prefix" value="/WEB-INF/views/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <!--c3p0 dataSource-->
+    <!--<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"-->
+          <!--destroy-method="close">-->
+        <!--<property name="driverClass" value="com.mysql.jdbc.Driver"></property>-->
+        <!--<property name="jdbcUrl" value="${jdbcurl}"></property>-->
+        <!--<property name="user" value="${username}"></property>-->
+        <!--<property name="password" value=""></property>-->
+        <!--<property name="minPoolSize" value="5"></property>-->
+        <!--<property name="maxPoolSize" value="50"></property>-->
+        <!--<property name="checkoutTimeout" value="3000" />-->
+        <!--<property name="maxStatements" value="100" />-->
+        <!--<property name="preferredTestQuery" value="SELECT 1" />-->
+        <!--<property name="testConnectionOnCheckout" value="true" />-->
+        <!--<property name="idleConnectionTestPeriod" value="1800" />-->
+        <!--<property name="acquireIncrement" value="1" />-->
+    <!--</bean>-->
+
+    <!--dbcp data pool-->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+        <property name="url" value="${jdbcurl}" />
+        <!--这个不能使用${username}当做属性名 username好像有特殊的含义，表示本机用户-->
+        <property name="username" value="${user}" />
+        <property name="password" value="${password}" />
+        <property name="initialSize" value="5"></property>
+        <property name="maxActive" value="10"></property>
+    </bean>
+
+    <!--sessionFactory-->
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"></property>
+        <!--<property name="packagesToScan">-->
+            <!--<value>com.tongkn</value>-->
+        <!--</property>-->
+        <property name="configLocation">
+            <value>classpath:hibernate.cfg.xml</value>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+                <prop key="hibernate.show_sql">false</prop>
+                <!--<prop key="hibernate.hbm2ddl.auto">update</prop>-->
+            </props>
+        </property>
+    </bean>
+
+    <tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true" />
+    <bean id="transactionManager"
+          class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory" />
+    </bean>
+
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/**" />
+            <bean class="com.tongkn.web.LogInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+</beans>
